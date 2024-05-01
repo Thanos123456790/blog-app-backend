@@ -48,14 +48,11 @@ async function run() {
         await userNotificationsCollection.createIndex({ createdAt: -1 }, { name: "createdAtIndex" });
 
 
-        // Serve static files from the public directory
-        app.use(express.static(path.join(__dirname, '../my-project/public/sitemap.xml')));
-
-        // Define a route for the sitemap.xml file
+        app.use(express.static(path.join(__dirname, '../my-project/dist/sitemap.xml')));
         app.get('/sitemap.xml', (req, res) => {
-            // Serve the sitemap.xml file
-            res.sendFile(path.join(__dirname, '../my-project/public/sitemap.xml'));
+            res.sendFile(path.join(__dirname, '../my-project/dist/sitemap.xml'));
         });
+
 
         // All Routes
         // routes for store issues
