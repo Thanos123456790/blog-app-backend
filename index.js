@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { reset } = require('nodemon');
+const path = require('path');
 
 const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -47,42 +48,51 @@ async function run() {
         await userNotificationsCollection.createIndex({ createdAt: -1 }, { name: "createdAtIndex" });
 
 
+        // Serve static files from the public directory
+        app.use(express.static(path.join(__dirname, '../my-project/public/sitemap.xml')));
+
+        // Define a route for the sitemap.xml file
+        app.get('/sitemap.xml', (req, res) => {
+            // Serve the sitemap.xml file
+            res.sendFile(path.join(__dirname, '../my-project/public/sitemap.xml'));
+        });
+
         // All Routes
         // routes for store issues
-        app.post("/store-issue",async(req,res) => {
-            const {issue,user,userName} = req.body;
-            try{
+        app.post("/store-issue", async (req, res) => {
+            const { issue, user, userName } = req.body;
+            try {
                 await userIssueCollection.insertOne({
                     issue,
                     user,
                     userName,
                     createdAt: new Date()
                 });
-                res.status(200).json({success:true,message:"Issue submitted successfully"});
-            }catch(error){
-                res.status(500).json({success:false,message:"Internal Server Error"});
+                res.status(200).json({ success: true, message: "Issue submitted successfully" });
+            } catch (error) {
+                res.status(500).json({ success: false, message: "Internal Server Error" });
             }
         })
 
         //ROUTE FOR STORE FEEDBACK
-        app.post("/send-feedback",async(req,res) => {
-            const {feedback,user,userName} = req.body;
-            try{
+        app.post("/send-feedback", async (req, res) => {
+            const { feedback, user, userName } = req.body;
+            try {
                 await userFeedbackCollection.insertOne({
                     feedback,
                     user,
                     userName,
                     createdAt: new Date()
                 });
-                res.status(200).json({success:true,message:"Feedback submitted successfully"});
-            }catch(error){
-                res.status(500).json({success:false,message:"Internal Server Error"});
+                res.status(200).json({ success: true, message: "Feedback submitted successfully" });
+            } catch (error) {
+                res.status(500).json({ success: false, message: "Internal Server Error" });
             }
         })
 
         // ROUTE FOR SEND MESSAGEE
         app.post("/send-message", async (req, res) => {
-            const { message, reciverEmail, senderEmail,name } = req.body; // Correct typo in variable name
+            const { message, reciverEmail, senderEmail, name } = req.body; // Correct typo in variable name
             const notification = false;
             try {
                 await messagesCollection.insertOne({
@@ -107,10 +117,10 @@ async function run() {
                 let commentsSuccess = false;
                 let likesSuccess = false;
                 let messageSuccess = false;
-        
+
                 // Fetch new comments
                 const newComments = await userCommentsCollection.find({ email: email, notification: false }).toArray();
-        
+
                 // Check if there are new comments
                 if (newComments.length > 0) {
                     const commentsToInsert = newComments.map(comment => ({
@@ -121,22 +131,22 @@ async function run() {
                         message: "You got a new comment on your blog",
                         blogId: comment.blogId,
                     }));
-        
+
                     // Insert new comments into notifications collection
                     await userNotificationsCollection.insertMany(commentsToInsert);
-        
+
                     // Update comment notification status
                     await userCommentsCollection.updateMany(
                         { email: email, notification: false },
                         { $set: { notification: true } }
                     );
-        
+
                     commentsSuccess = true;
                 }
-        
+
                 // Fetch new likes
                 const newLikes = await userActionsCollection.find({ email: email, notification: false, action: true }).toArray();
-        
+
                 // Check if there are new likes
                 if (newLikes.length > 0) {
                     const likesToInsert = newLikes.map(userAction => ({
@@ -146,22 +156,22 @@ async function run() {
                         message: "You got a like on your blog",
                         blogId: userAction.postId,
                     }));
-        
+
                     // Insert new likes into notifications collection
                     await userNotificationsCollection.insertMany(likesToInsert);
-        
+
                     // Update like notification status
                     await userActionsCollection.updateMany(
                         { email: email, notification: false },
                         { $set: { notification: true } }
                     );
-        
+
                     likesSuccess = true;
                 }
-        
+
                 // Fetch new messages
                 const newMessages = await messagesCollection.find({ reciverEmail: email, notification: false }).toArray();
-        
+
                 // Check if there are new messages
                 if (newMessages.length > 0) {
                     const messagesToInsert = newMessages.map(message => ({
@@ -171,19 +181,19 @@ async function run() {
                         notificationMessage: "New message received",
                         name: message.name,
                     }));
-        
+
                     // Insert new messages into notifications collection
                     await userNotificationsCollection.insertMany(messagesToInsert);
-        
+
                     // Update message notification status
                     await messagesCollection.updateMany(
                         { reciverEmail: email, notification: false },
                         { $set: { notification: true } }
                     );
-        
+
                     messageSuccess = true;
                 }
-        
+
                 // Consolidate response into a single JSON object
                 res.json({
                     success: true,
@@ -197,7 +207,7 @@ async function run() {
                 res.status(500).json({ success: false, error: "Internal Server Error" });
             }
         });
-        
+
         // Get all notifications for a user
         app.get("/notifications", async (req, res) => {
             try {
@@ -212,7 +222,7 @@ async function run() {
                 res.status(500).json({ success: false, error: "Internal server error" });
             }
         });
-        
+
         // Get user action for a specific post
         app.get("/user-action/:postId", async (req, res) => {
             const { postId } = req.params;
@@ -234,21 +244,21 @@ async function run() {
         // STORE LIKES
         app.post("/like/:id", async (req, res) => {
             const { id } = req.params;
-            const { userId, email , name } = req.body;
-        
+            const { userId, email, name } = req.body;
+
             try {
                 const existingLikeAction = await userActionsCollection.findOne({
                     postId: id,
                     user: userId,
                     action: true,
                 });
-        
+
                 const existingDislikeAction = await userActionsCollection.findOne({
                     postId: id,
                     user: userId,
                     action: false,
                 });
-        
+
                 if (existingLikeAction) {
                     return res.status(200).json({ success: true, message: "Already Liked" });
                 } else {
@@ -268,8 +278,8 @@ async function run() {
                         user: userId,
                         action: true,
                         email: email,
-                        notification : false,
-                        name : name,
+                        notification: false,
+                        name: name,
                     });
                     await blogsCollection.updateOne(
                         { _id: new ObjectId(id) },
@@ -282,26 +292,26 @@ async function run() {
                 return res.status(500).json({ success: false, error: "Internal server error" });
             }
         });
-        
+
         // STORE DISLIKES
 
         app.post("/dislike/:id", async (req, res) => {
             const { id } = req.params;
             const { userId, email } = req.body;
-        
+
             try {
                 const existingDislikeAction = await userActionsCollection.findOne({
                     postId: id,
                     user: userId,
                     action: false,
                 });
-        
+
                 const existingLikeAction = await userActionsCollection.findOne({
                     postId: id,
                     user: userId,
                     action: true,
                 });
-        
+
                 if (existingDislikeAction) {
                     return res.status(200).json({ success: true, message: "Already Disliked" });
                 } else {
@@ -333,7 +343,7 @@ async function run() {
                 return res.status(500).json({ success: false, error: "Internal server error" });
             }
         });
-        
+
         // route for reports
         app.post("/report/:id", async (req, res) => {
             const { id } = req.params;
@@ -386,20 +396,20 @@ async function run() {
         app.post("/comment/like/:commentId", async (req, res) => {
             const { commentId } = req.params;
             const { userId } = req.body;
-        
+
             try {
                 const existingLikeAction = await userCommentActionCollection.findOne({
                     postId: commentId,
                     user: userId,
                     action: true
                 });
-        
+
                 const existingDislikeAction = await userCommentActionCollection.findOne({
                     postId: commentId,
                     user: userId,
                     action: false
                 });
-        
+
                 if (existingLikeAction) {
                     //console.log("Already Liked");
                     return res.status(200).json({ success: true, message: "Already Liked" });
@@ -431,25 +441,25 @@ async function run() {
                 return res.status(500).json({ success: false, error: "Internal server error" });
             }
         });
-        
+
         // route for comments dislike
         app.post("/comment/dislike/:commentId", async (req, res) => {
             const { commentId } = req.params;
             const { userId } = req.body;
-        
+
             try {
                 const existingDislikeAction = await userCommentActionCollection.findOne({
                     postId: commentId,
                     user: userId,
                     action: false
                 });
-        
+
                 const existingLikeAction = await userCommentActionCollection.findOne({
                     postId: commentId,
                     user: userId,
                     action: true
                 });
-        
+
                 if (existingDislikeAction) {
                     //console.log("Already Disliked");
                     return res.status(200).json({ success: true, message: "Already Disliked" });
@@ -460,7 +470,7 @@ async function run() {
                             { $inc: { likes: -1 } }
                         );
                         await userCommentActionCollection.deleteOne({
-                            postId : commentId,
+                            postId: commentId,
                             user: userId,
                             action: true
                         });
@@ -481,7 +491,7 @@ async function run() {
                 return res.status(500).json({ success: false, error: "Internal server error" });
             }
         });
-        
+
 
         app.post("/comment/report/:commentId", async (req, res) => {
             // Handle report action for the comment with commentId
