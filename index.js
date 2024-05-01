@@ -49,8 +49,8 @@ async function run() {
 
 
         app.use(express.static(path.join(__dirname, '../my-project/dist')));
-        app.get('/sitemap.xml', (req, res) => {
-            res.sendFile(path.join(__dirname, '../my-project/dist/sitemap.xml'));
+        app.get('/sitemap.txt', (req, res) => {
+            res.sendFile(path.join(__dirname, '../my-project/dist/sitemap.txt'));
         });
 
 
