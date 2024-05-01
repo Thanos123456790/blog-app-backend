@@ -48,7 +48,7 @@ async function run() {
         await userNotificationsCollection.createIndex({ createdAt: -1 }, { name: "createdAtIndex" });
 
 
-        app.use(express.static(path.join(__dirname, '../my-project/dist/sitemap.xml')));
+        app.use(express.static(path.join(__dirname, '../my-project/dist')));
         app.get('/sitemap.xml', (req, res) => {
             res.sendFile(path.join(__dirname, '../my-project/dist/sitemap.xml'));
         });
