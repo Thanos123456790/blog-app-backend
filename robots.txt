@@ -1,0 +1,4 @@
+User-agent: Googlebot
+Allow: /
+
+Sitemap: https://blog-hub-69.netlify.app/sitemap.xml
