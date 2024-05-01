@@ -52,6 +52,10 @@ async function run() {
         app.get('/sitemap.txt', (req, res) => {
             res.sendFile(path.join(__dirname, '../my-project/dist/sitemap.txt'));
         });
+        app.get('/robots.txt', (req, res) => {
+            res.sendFile(path.join(__dirname, '../my-project/dist/robots.txt'));
+        });
+
 
 
         // All Routes
